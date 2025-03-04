@@ -168,7 +168,7 @@ async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Main bot function
 if __name__ == "__main__":
-    app = ApplicationBuilder().token("7842288516:AAEOA0Yy5OHMPJ_1w7OOYagJca_1U9Ii6OU").build()
+    app = ApplicationBuilder().token("BOT_TOKEN").build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("stop", stop))
