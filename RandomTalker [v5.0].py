@@ -387,31 +387,6 @@ async def report(update: Update, context: CallbackContext) -> None:
 
     await update.message.reply_text(f'Report submitted successfully! Report ID: {report_id}')
 
-async def appeal(update: Update, context: CallbackContext) -> None:
-    """Appeal a ban."""
-    user_id = update.message.chat_id
-    reason = ' '.join(update.message.text.split()[1:]) if len(update.message.text.split()) > 1 else 'No reason provided'
-
-    # Save appeal to the database
-    with report_conn:
-        cursor = report_conn.execute(
-            "INSERT INTO reports (reporter_id, reported_id, reason) VALUES (?, ?, ?) RETURNING id",
-            (user_id, user_id, reason)
-        )
-        appeal_id = cursor.fetchone()[0]
-    
-    # Send appeal to admin group
-    keyboard = [
-        [InlineKeyboardButton("Accept", callback_data=f"accept_{appeal_id}"),
-         InlineKeyboardButton("Reject", callback_data=f"reject_{appeal_id}")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    appeal_message = f"New appeal received!\n\nAppeal ID: {appeal_id}\nUser ID: {user_id}\nReason: {reason}"
-    await context.bot.send_message(ADMIN_GROUP_ID, appeal_message, reply_markup=reply_markup)
-
-    await update.message.reply_text(f'Appeal submitted successfully! Appeal ID: {appeal_id}')
-
 async def handle_callback(update: Update, context: CallbackContext) -> None:
     """Handle button callbacks for accepting/rejecting reports and appeals."""
     query = update.callback_query
@@ -429,21 +404,13 @@ async def handle_callback(update: Update, context: CallbackContext) -> None:
         report = cursor.fetchone()
 
     if not report:
-        await query.edit_message_text(text="Report/Appeal not found.")
+        await query.edit_message_text(text="Report not found.")
         return
 
     reporter_id, reported_id = report
 
     if action == 'accept':
         if 'appeal' in query.data:
-            with conn:
-                conn.execute(
-                    "DELETE FROM banned_users WHERE user_id = ?",
-                    (reported_id,)
-                )
-            await query.edit_message_text(text=f"Appeal {report_id} has been accepted. User {reported_id} is unbanned.")
-            await context.bot.send_message(reporter_id, f'Your appeal (ID: {report_id}) has been accepted.')
-        else:
             with conn:
                 conn.execute(
                     "INSERT INTO banned_users (user_id, reason, banned_until) VALUES (?, ?, ?)",
@@ -453,10 +420,8 @@ async def handle_callback(update: Update, context: CallbackContext) -> None:
             await context.bot.send_message(reporter_id, f'Your report (ID: {report_id}) has been accepted.')
 
     elif action == 'reject':
-        await query.edit_message_text(text=f"Report/Appeal {report_id} has been rejected.")
+        await query.edit_message_text(text=f"Report {report_id} has been rejected.")
         if 'appeal' in query.data:
-            await context.bot.send_message(reporter_id, f'Your appeal (ID: {report_id}) has been rejected.')
-        else:
             await context.bot.send_message(reporter_id, f'Your report (ID: {report_id}) has been rejected.')
             
 def main() -> None:
@@ -475,7 +440,6 @@ def main() -> None:
     application.add_handler(CommandHandler("connect", connect))
     application.add_handler(CommandHandler("disconnect", disconnect))
     application.add_handler(CommandHandler("report", report))
-    application.add_handler(CommandHandler("appeal", appeal))
     application.add_handler(CallbackQueryHandler(handle_callback))
 
     # on non command i.e message - forward the message or media to the chat partner
