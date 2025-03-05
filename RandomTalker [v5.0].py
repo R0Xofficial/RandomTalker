@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 # Enable logging
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levellevel)s - %(message)s',
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
@@ -78,8 +78,8 @@ with report_conn:
     ''')
 
 # Bot owner ID
-BOT_OWNER_ID = 000000000  # Replace with the actual bot owner's Telegram user ID
-ADMIN_GROUP_ID = -0000000000000  # Replace with the actual admin group chat ID
+BOT_OWNER_ID = 123456789  # Replace with the actual bot owner's Telegram user ID
+ADMIN_GROUP_ID = -1001234567890  # Replace with the actual admin group chat ID
 
 # Dictionary to store the user pairs in memory
 user_pairs = {}
