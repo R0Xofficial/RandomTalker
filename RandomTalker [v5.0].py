@@ -419,12 +419,12 @@ async def handle_callback(update: Update, context: CallbackContext) -> None:
 
     callback_data = query.data.split('_')
     action = callback_data[0]
-    report_id = int(callback_data[1])
+    item_id = int(callback_data[1])
 
     with report_conn:
         cursor = report_conn.execute(
             "SELECT reporter_id, reported_id FROM reports WHERE id = ?",
-            (report_id,)
+            (item_id,)
         )
         report = cursor.fetchone()
 
@@ -441,26 +441,27 @@ async def handle_callback(update: Update, context: CallbackContext) -> None:
                     "DELETE FROM banned_users WHERE user_id = ?",
                     (reported_id,)
                 )
-            await query.edit_message_text(text=f"Appeal {report_id} has been accepted. User {reported_id} is unbanned.")
-            await context.bot.send_message(reported_id, f'Your appeal (ID: {report_id}) has been accepted. You have been unbanned.')
-            await context.bot.send_message(reporter_id, f'The appeal for user {reported_id} (ID: {report_id}) has been accepted.')
+            await query.edit_message_text(text=f"Appeal {item_id} has been accepted. User {reported_id} is unbanned.")
+            await context.bot.send_message(reported_id, f'Your appeal (ID: {item_id}) has been accepted. You have been unbanned.')
+            await context.bot.send_message(reporter_id, f'The appeal for user {reported_id} (ID: {item_id}) has been accepted.')
         else:
             with conn:
                 conn.execute(
                     "INSERT INTO banned_users (user_id, reason, banned_until) VALUES (?, ?, ?)",
-                    (reported_id, f"Report ID: {report_id}", None)
+                    (reported_id, f"Report ID: {item_id}", None)
                 )
-            await query.edit_message_text(text=f"Report {report_id} has been accepted. User {reported_id} is banned.")
-            await context.bot.send_message(reporter_id, f'Your report (ID: {report_id}) has been accepted.')
+            await query.edit_message_text(text=f"Report {item_id} has been accepted. User {reported_id} is banned.")
+            await context.bot.send_message(reporter_id, f'Your report (ID: {item_id}) has been accepted.')
 
     elif action == 'reject':
-        await query.edit_message_text(text=f"Report/Appeal {report_id} has been rejected.")
         if 'appeal' in query.data:
-            await context.bot.send_message(reported_id, f'Your appeal (ID: {report_id}) has been rejected. The ban remains in effect.')
-            await context.bot.send_message(reporter_id, f'The appeal for user {reported_id} (ID: {report_id}) has been rejected.')
+            await query.edit_message_text(text=f"Appeal {item_id} has been rejected.")
+            await context.bot.send_message(reported_id, f'Your appeal (ID: {item_id}) has been rejected. The ban remains in effect.')
+            await context.bot.send_message(reporter_id, f'The appeal for user {reported_id} (ID: {item_id}) has been rejected.')
         else:
-            await context.bot.send_message(reporter_id, f'Your report (ID: {report_id}) has been rejected.')
-
+            await query.edit_message_text(text=f"Report {item_id} has been rejected.")
+            await context.bot.send_message(reporter_id, f'Your report (ID: {item_id}) has been rejected.')
+            
 def main() -> None:
     """Start the bot."""
     # Create the Application and pass it your bot's token.
