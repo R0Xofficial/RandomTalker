@@ -435,7 +435,7 @@ async def handle_callback(update: Update, context: CallbackContext) -> None:
     reporter_id, reported_id = report
 
     if action == 'accept':
-        if 'appeal' in query.data:
+        if 'appeal' in callback_data:
             # Unban the user
             with conn:
                 conn.execute(
@@ -464,7 +464,7 @@ async def handle_callback(update: Update, context: CallbackContext) -> None:
                     await context.bot.send_message(reporter_id, f'Your report (ID: {item_id}) has been accepted, but user {reported_id} was already banned.')
 
     elif action == 'reject':
-        if 'appeal' in query.data:
+        if 'appeal' in callback_data:
             await query.edit_message_text(text=f"Appeal {item_id} has been rejected.")
             await context.bot.send_message(reported_id, f'Your appeal (ID: {item_id}) has been rejected. The ban remains in effect.')
             await context.bot.send_message(reporter_id, f'The appeal for user {reported_id} (ID: {item_id}) has been rejected.')
