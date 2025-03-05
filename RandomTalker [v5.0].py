@@ -419,13 +419,12 @@ async def handle_callback(update: Update, context: CallbackContext) -> None:
 
     callback_data = query.data.split('_')
     action = callback_data[0]
-    item_type = callback_data[1]
-    item_id = int(callback_data[2])
+    report_id = int(callback_data[1])
 
     with report_conn:
         cursor = report_conn.execute(
             "SELECT reporter_id, reported_id FROM reports WHERE id = ?",
-            (item_id,)
+            (report_id,)
         )
         report = cursor.fetchone()
 
@@ -436,42 +435,29 @@ async def handle_callback(update: Update, context: CallbackContext) -> None:
     reporter_id, reported_id = report
 
     if action == 'accept':
-        if item_type == 'appeal':
-            # Unban the user
+        if 'appeal' in query.data:
             with conn:
                 conn.execute(
                     "DELETE FROM banned_users WHERE user_id = ?",
                     (reported_id,)
                 )
-            await query.edit_message_text(text=f"Appeal {item_id} has been accepted. User {reported_id} is unbanned.")
-            await context.bot.send_message(reported_id, f'Your appeal (ID: {item_id}) has been accepted. You have been unbanned.')
-            await context.bot.send_message(reporter_id, f'The appeal for user {reported_id} (ID: {item_id}) has been accepted.')
-        elif item_type == 'report':
-            # Ban the user
+            await query.edit_message_text(text=f"Appeal {report_id} has been accepted. User {reported_id} is unbanned.")
+            await context.bot.send_message(reporter_id, f'Your appeal (ID: {report_id}) has been accepted.')
+        else:
             with conn:
-                cursor = conn.execute(
-                    "SELECT user_id FROM banned_users WHERE user_id = ?",
-                    (reported_id,)
+                conn.execute(
+                    "INSERT INTO banned_users (user_id, reason, banned_until) VALUES (?, ?, ?)",
+                    (reported_id, f"Report ID: {report_id}", None)
                 )
-                if cursor.fetchone() is None:
-                    conn.execute(
-                        "INSERT INTO banned_users (user_id, reason, banned_until) VALUES (?, ?, ?)",
-                        (reported_id, f"Report ID: {item_id}", None)
-                    )
-                    await query.edit_message_text(text=f"Report {item_id} has been accepted. User {reported_id} is banned.")
-                    await context.bot.send_message(reporter_id, f'Your report (ID: {item_id}) has been accepted.')
-                else:
-                    await query.edit_message_text(text=f"User {reported_id} is already banned.")
-                    await context.bot.send_message(reporter_id, f'Your report (ID: {item_id}) has been accepted, but user {reported_id} was already banned.')
+            await query.edit_message_text(text=f"Report {report_id} has been accepted. User {reported_id} is banned.")
+            await context.bot.send_message(reporter_id, f'Your report (ID: {report_id}) has been accepted.')
 
     elif action == 'reject':
-        if item_type == 'appeal':
-            await query.edit_message_text(text=f"Appeal {item_id} has been rejected.")
-            await context.bot.send_message(reported_id, f'Your appeal (ID: {item_id}) has been rejected. The ban remains in effect.')
-            await context.bot.send_message(reporter_id, f'The appeal for user {reported_id} (ID: {item_id}) has been rejected.')
-        elif item_type == 'report':
-            await query.edit_message_text(text=f"Report {item_id} has been rejected.")
-            await context.bot.send_message(reporter_id, f'Your report (ID: {item_id}) has been rejected.')
+        await query.edit_message_text(text=f"Report/Appeal {report_id} has been rejected.")
+        if 'appeal' in query.data:
+            await context.bot.send_message(reporter_id, f'Your appeal (ID: {report_id}) has been rejected.')
+        else:
+            await context.bot.send_message(reporter_id, f'Your report (ID: {report_id}) has been rejected.')
             
 def main() -> None:
     """Start the bot."""
