@@ -79,7 +79,7 @@ with report_conn:
 
 # Bot owner ID
 BOT_OWNER_ID = 000000000  # Replace with the actual bot owner's Telegram user ID
-ADMIN_GROUP_ID = -000000000000  # Replace with the actual admin group chat ID
+ADMIN_GROUP_ID = -00000000000  # Replace with the actual admin group chat ID
 
 # Dictionary to store the user pairs in memory
 user_pairs = {}
@@ -133,8 +133,13 @@ async def add_sudo(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text('You do not have permission to use this command.')
         return
 
-    target_id = int(update.message.text.split()[1])
-    username = update.message.text.split()[2]
+    try:
+        target_id = int(update.message.text.split()[1])
+        username = update.message.text.split()[2]
+    except (IndexError, ValueError):
+        await update.message.reply_text('Usage: /addsudo <user_id> <username>')
+        return
+
     with sudo_conn:
         sudo_conn.execute(
             "INSERT INTO sudo_users (user_id, username) VALUES (?, ?)",
@@ -149,7 +154,12 @@ async def del_sudo(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text('You do not have permission to use this command.')
         return
 
-    target_id = int(update.message.text.split()[1])
+    try:
+        target_id = int(update.message.text.split()[1])
+    except (IndexError, ValueError):
+        await update.message.reply_text('Usage: /delsudo <user_id>')
+        return
+
     with sudo_conn:
         sudo_conn.execute(
             "DELETE FROM sudo_users WHERE user_id = ?",
